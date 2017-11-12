@@ -3,7 +3,6 @@ package chap3
 sealed trait List[+A]
 
 object Nil extends List[Nothing]
-
 case class Cons[+A](h: A, t: List[A]) extends List[A]
 
 object List {
@@ -144,8 +143,25 @@ object List {
   def foldLeftByRight[A, B](l: List[A], z:B)(f:(B, A) => B): B =
     foldRight(reverseFold(l), z)((a, b) => f(b,a))
 
-//  def appendByFoldLeft[A](as: List[A], bs:List[A]): List[A] =
+  def appendByFold[A](as: List[A], bs: List[A]): List[A] =
+    foldRightByLeft(as, bs)((a, bs) => Cons(a, bs))
 
+  /**
+    * flatten Nth dimension array to N-1th dimension array
+    * @param l 2nd dimension array
+    * @tparam A array element type
+    * @return flatten array
+    */
+  def flatten[A](l:List[List[A]]): List[A] =
+    foldLeft(l, Nil:List[A])((a, b) => appendByFold(a, b))
 
+  def map[A, B](l:List[A])(f:A => B): List[B]
+    = foldRightByLeft(l, Nil:List[B])((a, b) => Cons(f(a), b))
+
+  def filter[A](l: List[A])(f: A => Boolean): List[A]
+    = foldRightByLeft(l, Nil:List[A])((a, b) => if (f(a)) Cons(a, filter(b)(f)) else filter(b)(f))
+
+  def flatMap[A, B](l:List[A])(f:A => List[B]): List[B] =
+    foldRightByLeft(l, Nil:List[B])((a, b) => appendByFold(f(a), b))
 
 }
