@@ -1,9 +1,12 @@
 package chap6
 
 trait RandomGenerator {
+
   // 랜덤한 숫자 값과 숫자를 생성한 후의 시드 상태를 리턴
   def nextInt: (Int, RandomGenerator)
+
 }
+
 
 case class SimpleRandomGenerator(seed:Long) extends RandomGenerator {
 
@@ -15,14 +18,24 @@ case class SimpleRandomGenerator(seed:Long) extends RandomGenerator {
     val nextRandomGenerator = SimpleRandomGenerator(nextSeed)
     ((nextSeed >>> 16).toInt, nextRandomGenerator)
   }
-
-
 }
 
 object RandomGenerator {
+  type Rand[+A] = (RandomGenerator => (A, RandomGenerator))
+
+  def int: Rand[Int] = _.nextInt
+
+  def unit[A](a: A): Rand[A] = rng => (a, rng)
+
+  def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
+    rng => {
+      val (a, rng2) = s(rng)
+      (f(a), rng2)
+    }
 
   /**
     * generate 0 or positive integer number
+    *
     * @param randomGenerator seed
     * @return 0 or positive integer number
     */
@@ -34,11 +47,14 @@ object RandomGenerator {
     loop(randomGenerator.nextInt)
   }
 
-  def double(rng: RandomGenerator):(Double, RandomGenerator) = {
+  def doubleNaive(rng: RandomGenerator):(Double, RandomGenerator) = {
     val t = RandomGenerator.nonNegativeInt(rng)
     val n = t._1 - (t._1 / Int.MaxValue)
     (n.toDouble/Int.MaxValue, t._2)
   }
+
+  def double(rng: RandomGenerator): (Double, RandomGenerator) =
+    map(nonNegativeInt)(i => (i - i/Int.MaxValue).toDouble/Int.MaxValue)(rng)
 
   def intDouble(rng: RandomGenerator):((Int, Double), RandomGenerator) = {
     val t1 = rng.nextInt
@@ -73,4 +89,5 @@ object RandomGenerator {
     loop(count, rng, List())
   }
 }
+
 
