@@ -41,9 +41,9 @@ class RandomGeneratorTest extends FlatSpec with Matchers {
       t._1 should be >= 0.0
       t._1 should be < 1.0
 //      println(t._1)
-      if(n > 1) loop(n-1, t._2.double)
+      if(n > 1) loop(n-1, RandomGenerator.double(t._2))
     }
-    loop(10, generator.double)
+    loop(10, RandomGenerator.double(generator))
   }
 
   it should "return int, double tuple" in {
