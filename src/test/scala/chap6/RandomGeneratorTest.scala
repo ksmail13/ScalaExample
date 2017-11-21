@@ -82,7 +82,7 @@ class RandomGeneratorTest extends FlatSpec with Matchers {
   it should "return int list" in {
     val generator = SimpleRandomGenerator(1239813)
     val tuple = RandomGenerator.ints(3)(generator) // why curried?
-    //    println(tuple)
+    println(tuple)
 
     tuple._1 shouldBe a[List[Integer]]
     tuple._2 shouldBe a[RandomGenerator]
