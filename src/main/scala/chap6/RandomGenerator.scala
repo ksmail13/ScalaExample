@@ -33,6 +33,18 @@ object RandomGenerator {
       (f(a), rng2)
     }
 
+  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f:(A,B) => C): Rand[C] =
+    rng => {
+      val t1 = ra(rng)
+      val t2 = rb(t1._2)
+      (f(t1._1, t2._1), t2._2)
+    }
+
+  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
+    rng => {
+
+    }
+
   /**
     * generate 0 or positive integer number
     *
@@ -56,24 +68,14 @@ object RandomGenerator {
   def double(rng: RandomGenerator): (Double, RandomGenerator) =
     map(nonNegativeInt)(i => (i - i/Int.MaxValue).toDouble/Int.MaxValue)(rng)
 
-  def intDouble(rng: RandomGenerator):((Int, Double), RandomGenerator) = {
-    val t1 = rng.nextInt
-    val t2 = double(t1._2)
-    ((t1._1, t2._1), t2._2)
-  }
+  def intDouble(rng: RandomGenerator):Rand[(Int, Double)] =
+    map2(int, double)((_, _))
 
-  def doubleInt(rng:RandomGenerator):((Double, Int), RandomGenerator) = {
-    val t1 = double(rng)
-    val t2 = t1._2.nextInt
-    ((t1._1, t2._1), t2._2)
-  }
+  def doubleInt(rng:RandomGenerator):Rand[(Double, Int)] =
+    map2(double, int)((_, _))
 
-  def double3(rng:RandomGenerator):((Double, Double, Double), RandomGenerator) = {
-    val t1 = double(rng)
-    val t2 = double(t1._2)
-    val t3 = double(t2._2)
-    ((t1._1, t2._1, t3._1), t3._2)
-  }
+  def double3(rng:RandomGenerator):Rand[(Double, Double, Double)] =
+    map2(map2(double, double)((_, _)), double)((a, b) => (a._1, a._2, b))
 
   def ints(count:Int)(rng: RandomGenerator):(List[Int], RandomGenerator) = {
     @annotation.tailrec
