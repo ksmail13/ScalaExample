@@ -29,13 +29,13 @@ object RandomGenerator {
 
   def unit[A](a: A): Rand[A] = rng => (a, rng)
 
-  def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
+  def mapNaive[A, B](s: Rand[A])(f: A => B): Rand[B] =
     rng => {
       val (a, rng2) = s(rng)
       (f(a), rng2)
     }
 
-  def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+  def map2Naive[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
     rng => {
       val t1 = ra(rng)
       val t2 = rb(t1._2)
@@ -73,6 +73,27 @@ object RandomGenerator {
 
       loop(fs, rng, List())
     }
+
+  def flatMap[A, B](f:Rand[A])(g:A=> Rand[B]): Rand[B] =
+    rng => {
+      val result = f(rng)
+      g(result._1)(result._2)
+    }
+
+  def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
+    flatMap(s)(a => rng => (f(a), rng))
+
+  def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+    flatMap(ra)(a => flatMap(rb)(b => rng => (f(a, b), rng)))
+
+  def nonNegativeLessThen(n:Int):Rand[Int] =
+    flatMap(nonNegativeInt)(i => {
+      val mod = i % n
+      if (i + (n - 1) - mod >= 0)
+        rng => (mod, rng) // return new function
+      else
+        nonNegativeLessThen(n)
+    })
 
   /**
     * generate 0 or positive integer number

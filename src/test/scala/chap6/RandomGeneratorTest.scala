@@ -51,7 +51,7 @@ class RandomGeneratorTest extends FlatSpec with Matchers {
   it should "return int, double tuple" in {
     val generator = SimpleRandomGenerator(1239813)
     val tuple = RandomGenerator.intDouble(generator)
-    //    println(tuple)
+    println(tuple)
 
     tuple._1._1 shouldBe a[Integer]
     tuple._1._2 shouldBe a[java.lang.Double]
@@ -109,5 +109,12 @@ class RandomGeneratorTest extends FlatSpec with Matchers {
     }
 
     loop(10, generator)
+  }
+
+  it should "nonNegativeLessThan(n) will return positive integer under n" in {
+    val g = SimpleRandomGenerator(10)
+    val result = RandomGenerator.nonNegativeLessThen(10)(g)
+    println(result)
+    result._1 should be < 10
   }
 }
