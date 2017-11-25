@@ -1,6 +1,6 @@
 package chap6
 
-import chap6.State.State
+import scala.annotation.tailrec
 
 trait RandomGenerator {
 
@@ -23,13 +23,13 @@ case class SimpleRandomGenerator(seed: Long) extends RandomGenerator {
 object RandomGenerator {
   type Rand[+A] = State[RandomGenerator, A]
 
-  def int: Rand[Int] = _.nextInt
+  def int: Rand[Int] = State(_.nextInt)
 
-  def nonNegativeLessThen(n:Int):Rand[Int] =
-    State.flatMap(nonNegativeInt)(i => {
+  def nonNegativeLessThen(n: Int): Rand[Int] =
+    nonNegativeInt.flatMap(i => {
       val mod = i % n
       if (i + (n - 1) - mod >= 0)
-        rng => (mod, rng) // return new function
+        State(rng => (mod, rng))
       else
         nonNegativeLessThen(n)
     })
@@ -37,38 +37,25 @@ object RandomGenerator {
   /**
     * generate 0 or positive integer number
     *
-    * @param randomGenerator seed
-    * @return 0 or positive integer number
+    * @return 0 or positive integer number generator
     */
-  def nonNegativeInt(randomGenerator: RandomGenerator): (Int, RandomGenerator) = {
-    @annotation.tailrec
-    def loop(t: (Int, RandomGenerator)): (Int, RandomGenerator) =
-      if (t._1 < 0) loop(t._2.nextInt)
-      else t
+  def nonNegativeInt: Rand[Int] =
+    int.map(i => if (i < 0) i * -1 else i)
 
-    loop(randomGenerator.nextInt)
-  }
+  def double: Rand[Double] =
+    nonNegativeInt.map(i => (i - i / Int.MaxValue).toDouble / Int.MaxValue)
 
-  def doubleNaive(rng: RandomGenerator): (Double, RandomGenerator) = {
-    val t = RandomGenerator.nonNegativeInt(rng)
-    val n = t._1 - (t._1 / Int.MaxValue)
-    (n.toDouble / Int.MaxValue, t._2)
-  }
+  def intDouble: Rand[(Int, Double)] =
+    State.map2(int, double)((_, _))
 
-  def double(rng: RandomGenerator): (Double, RandomGenerator) =
-    State.map(nonNegativeInt)(i => (i - i / Int.MaxValue).toDouble / Int.MaxValue)(rng)
+  def doubleInt: Rand[(Double, Int)] =
+    State.map2(double, int)((_, _))
 
-  def intDouble(rng: RandomGenerator): ((Int, Double), RandomGenerator) =
-    State.map2(int, double)((_, _))(rng)
+  def double3: Rand[(Double, Double, Double)] =
+    State.map2(State.map2(double, double)((_, _)), double)((a, b) => (a._1, a._2, b))
 
-  def doubleInt(rng: RandomGenerator): ((Double, Int), RandomGenerator) =
-    State.map2(double, int)((_, _))(rng)
-
-  def double3(rng: RandomGenerator): ((Double, Double, Double), RandomGenerator) =
-    State.map2(State.map2(double, double)((_, _)), double)((a, b) => (a._1, a._2, b))(rng)
-
-  def ints(count: Int)(rng: RandomGenerator): (List[Int], RandomGenerator) =
-    State.sequenceLoop(List.fill(count)(int))(rng)
+  def ints(count: Int): Rand[List[Int]] =
+    State.sequence(List.fill(count)(int))
 }
 
 
