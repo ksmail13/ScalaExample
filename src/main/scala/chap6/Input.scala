@@ -18,19 +18,24 @@ object Machine {
     (l.head, ns)
   })
 
+
+  private def checkAny[A](conditions: Boolean*)(success: => A, fail: => A): A = {
+    if(conditions.foldLeft(false)(_ || _)) success
+    else fail
+  }
+
   /**
     * translate input to state
     * @param i input
     * @return State object for input
     */
   private def inputState(i: Input): State[Machine, (Int, Int)] = i match {
-    case Coin => State(s => {
-      if (s.candies == 0 || !s.locked) State.unit((s.coins, s.candies)).run(s)
-      else ((s.coins + 1, s.candies), Machine(locked = true, s.candies, s.coins + 1))
-    })
-    case Turn => State(s => {
-      if (s.candies == 0 || s.locked) State.unit((s.coins, s.candies)).run(s)
-      else ((s.coins, s.candies - 1), Machine(locked = false, s.candies - 1, s.coins))
-    })
+    case Coin => State(s => checkAny(s.candies <= 0, !s.locked)
+            (State.unit((s.coins, s.candies)).run(s)
+            , ((s.coins + 1, s.candies), Machine(locked = true, s.candies, s.coins + 1))))
+    case Turn => State(s => checkAny(s.candies <= 0, s.locked)
+            (State.unit((s.coins, s.candies)).run(s)
+            , ((s.coins, s.candies - 1), Machine(locked = false, s.candies - 1, s.coins))))
   }
+
 }
